@@ -4,21 +4,10 @@
 #@ Integer(label="max number of time points to analyse",value=999,persist=false) maxTp
 
 /*
- * Macro for correcting, stitching, aligning and thresholding time lapse mosaic images acquired with a custom 
+ * Macro for correcting, stitching and aligning time lapse mosaic images acquired with a custom 
  * microscope 
  * 
- * Written by S.Herbert 18th July 2018 sherbert@pasteur.fr 
- * 
- * version v2.4
- *  - Finally set the batch mode to true to avoid image pop up
- * 
- * version v2.3
- *  - Exchanged the descriptor based registration by "Register Virtual Stack Slices" with automated feature extraction
- * 
- * version v2.2
- *  - Excludes holes in the particle analysis
- *  - Performs an opening of 2 pixels before the particle analysis (background cancelling)
- *  - Increased the size limit from 500 to 2000 pix in the particle analysis (background cancelling)
+ * Written by S.Herbert sherbert@pasteur.fr 
  * 
  * DO NOT FORGET TO SWITCH ON PROCESS/BINARY/OPTIONS/ BLACK BACKGROUND
  */
@@ -37,7 +26,7 @@ mosaicFoldName = "stitchedTimePoints"; // Name of the stitcher output folder
 mosaicRegFoldName = "regMosaic"; // Name of the output folder for registered mosaic
 movieOutputFoldName = "outputMovie"; // Name of the folder containing the movie
 movieOutputName = "regMovie"; // Name of the movie after alignment (registration)
-binMovieName = "binarizedMovie"; // Name of the movie after binarization and filtering
+
 
 // *PARAMS* //
 
@@ -120,18 +109,6 @@ for (tp=1; tp<=totFrame; tp++){
 File.makeDirectory(myRootDir+"/"+movieOutputFoldName);
 alignMosaics()
 
-
-// make binary
-run("Make Binary", "method=MaxEntropy background=Default calculate black");
-
-// clean image based on particle caracteristics
-run("Erode", "stack");run("Erode", "stack"); // Should look for a nicer way of morphological opening but same result in the end
-run("Dilate", "stack");run("Dilate", "stack");
-run("Analyze Particles...", "size=2000-Infinity circularity=0.00-0.40 show=Masks exclude clear stack");
-rename(binMovieName);
-// invert images
-run("Invert", "stack");
-saveAs("Tiff", myRootDir+"/"+movieOutputFoldName+"/"+binMovieName);
 
 
 
