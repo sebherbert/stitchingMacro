@@ -16,7 +16,8 @@
  setBatchMode(true);
 
 // PARAMS //
-binMovieName = "binarizedMovie"; // Name of the movie after binarization and filtering
+binMovieNameSuff = "bin_"; // Name of the movie after binarization and filtering
+FFTMovieNameSuff = "FFT_"; // Name of the movie after FFT
 // *PARAMS* //
 
 run("Close All");
@@ -26,6 +27,7 @@ open(myRegFile);
 
 // Save directory
 myOutputDir = getDirectory("image");
+myCurrentImageName = getInfo("image.filename");
 
 // run an fft bandpass filter
 if (doFFTbandpass) {
@@ -34,7 +36,9 @@ if (doFFTbandpass) {
 	fftParams = fftParams+" tolerance="+angleTol;
 	run("Bandpass Filter...", fftParams+" autoscale saturate process");
 }
-
+// Save temp file
+myCurrentImageName = FFTMovieNameSuff+myCurrentImageName;
+saveAs("Tiff", myOutputDir+"/"+myCurrentImageName);
 
 // make binary
 run("Make Binary", "method=MaxEntropy background=Default calculate black");
@@ -46,7 +50,7 @@ run("Analyze Particles...", "size=2000-Infinity circularity=0.00-0.40 show=Masks
 rename(binMovieName);
 // invert images
 run("Invert", "stack");
-saveAs("Tiff", myOutputDir+"/"+binMovieName);
+saveAs("Tiff", myOutputDir+"/"+binMovieNameSuff+myCurrentImageName);
 
 
 
