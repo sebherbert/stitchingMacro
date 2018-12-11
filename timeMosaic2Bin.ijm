@@ -17,8 +17,8 @@
 
 // PARAMS //
 binMovieName = "binarizedMovie"; // Name of the movie after binarization and filtering
+// *PARAMS* //
 
-// *PARAMS* //u
 run("Close All");
 
 // Open the movie
