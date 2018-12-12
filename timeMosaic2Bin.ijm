@@ -41,16 +41,19 @@ myCurrentImageName = FFTMovieNameSuff+myCurrentImageName;
 saveAs("Tiff", myOutputDir+"/"+myCurrentImageName);
 
 // make binary
+// new image name
+myCurrentImageName = binMovieNameSuff+myCurrentImageName;
+
 run("Make Binary", "method=MaxEntropy background=Default calculate black");
 
 // clean image based on particle caracteristics
 run("Erode", "stack");run("Erode", "stack"); // Should look for a nicer way of morphological opening but same result in the end
 run("Dilate", "stack");run("Dilate", "stack");
 run("Analyze Particles...", "size=2000-Infinity circularity=0.00-0.40 show=Masks exclude clear stack");
-rename(binMovieName);
+rename(myCurrentImageName);
 // invert images
 run("Invert", "stack");
-saveAs("Tiff", myOutputDir+"/"+binMovieNameSuff+myCurrentImageName);
+saveAs("Tiff", myOutputDir+"/"+myCurrentImageName);
 
 
 
