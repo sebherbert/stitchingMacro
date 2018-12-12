@@ -45,7 +45,10 @@ roiManager("Add");
 
 // Prepare image
 //run("Median...", "radius=5 stack"); // To smoothen out small differences and improve mode eval
-run("32-bit"); // to allow for intensity division
+if (bitDepth()==8 || bitDepth()==16){
+	setMinAndMax(0, 2^bitDepth()-1 );
+	run("32-bit"); // to allow for intensity division
+}
 
 // Set the measurements to Mode only and measure all frame
 run("Set Measurements...", "modal redirect=None decimal=1");
