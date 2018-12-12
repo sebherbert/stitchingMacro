@@ -16,8 +16,15 @@
  setBatchMode(true);
 
 // PARAMS //
-binMovieNameSuff = "bin_"; // Name of the movie after binarization and filtering
-FFTMovieNameSuff = "FFT_"; // Name of the movie after FFT
+prefBinMovieName = "bin_"; // Name of the movie after binarization and filtering
+prefFFTMovieName = "FFT_"; // Name of the movie after FFT
+outParams = "analysisParams.txt"; // Name of the output file to remember the parameters used
+// Thresholding step
+binMethod = "MaxEntropy"; // binarization threshold method
+doCalculate = 1;
+// Analyze particle step
+binMinSize = 2000; // smallest object acceptable in binarization
+binCirc = "0.00-0.40"; // circularity of the detected object
 // *PARAMS* //
 
 run("Close All");
@@ -37,25 +44,56 @@ if (doFFTbandpass) {
 	run("Bandpass Filter...", fftParams+" autoscale saturate process");
 }
 // Save temp file
-myCurrentImageName = FFTMovieNameSuff+myCurrentImageName;
+myCurrentImageName = prefFFTMovieName+myCurrentImageName;
 saveAs("Tiff", myOutputDir+"/"+myCurrentImageName);
 
 // make binary
 // new image name
-myCurrentImageName = binMovieNameSuff+myCurrentImageName;
-
-run("Make Binary", "method=MaxEntropy background=Default calculate black");
+myCurrentImageName = prefBinMovieName+myCurrentImageName;
+binParams = "method="+binMethod+" background=Default";
+if (doCalculate) {
+	binParams = binParams+" calculate";
+}
+binParams =  binParams+" black";
+run("Make Binary", binParams);
 
 // clean image based on particle caracteristics
 run("Erode", "stack");run("Erode", "stack"); // Should look for a nicer way of morphological opening but same result in the end
-run("Dilate", "stack");run("Dilate", "stack");
-run("Analyze Particles...", "size=2000-Infinity circularity=0.00-0.40 show=Masks exclude clear stack");
+run("Dilate", "stack");run("Dilate", "stack"); // Also if changed here, should also change the output params text file
+run("Analyze Particles...", "size="+binMinSize+"-Infinity circularity="+binCirc+" show=Masks exclude clear stack");
 rename(myCurrentImageName);
 // invert images
 run("Invert", "stack");
 saveAs("Tiff", myOutputDir+"/"+myCurrentImageName);
 
+// Save Parameters
+PathParamsFile = myOutputDir+"/"+outParams;
+if (!File.exists(PathParamsFile)){
+	File.open(PathParamsFile);	
+}
+// Could look for the "Image binarisation parameters" string and delete anything after
+// => a default of this is the analysis of the same source with different parameters 
+File.append("\nImage binarisation parameters", PathParamsFile);
+getDateAndTime(year, month, dayOfWeek, dayOfMonth, hour, minute, second, msec);
+File.append("Analysis performed the: "+year+"/"+month+1+"/"+dayOfMonth, PathParamsFile);
+File.append("Input directory: "+myOutputDir, PathParamsFile);
 
+File.append("\nFFT parameters", PathParamsFile); // FFT params
+File.append("Apply a bandpass FTT filter: "+doFFTbandpass, PathParamsFile);
+if (doFFTbandpass) {
+	File.append("Largest structure size (pixel): "+highPass, PathParamsFile);
+	File.append("Smallest structure size (pixel): "+lowPass, PathParamsFile);
+	File.append("Suppress bands in image: "+suppressBands, PathParamsFile);
+	File.append("Tolerance angle: "+angleTol, PathParamsFile);
+}
 
+File.append("\nBinarisation parameters", PathParamsFile); //binarisation params
+File.append("binarization parameters:\n"+binParams, PathParamsFile);
 
+File.append("\nPost binarization parameters", PathParamsFile); // post binarisation params
+File.append("Do Opening twice", PathParamsFile);
+File.append("Object minimum size: "+binMinSize, PathParamsFile);
+File.append("Object circularity: "+binCirc, PathParamsFile);
 
+// exit macro
+IJ.log("Done Binarizing");

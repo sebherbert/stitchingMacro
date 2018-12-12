@@ -1,7 +1,7 @@
 #@ File(label="Select the first tile", style="file") myFileOri
-#@ Integer(label="number of tiles along X",value=8,persist=false) tileX
-#@ Integer(label="number of tiles along Y",value=14,persist=false) tileY
-#@ Integer(label="max number of time points to analyse",value=999,persist=false) maxTp
+#@ Integer(label="number of tiles along X",value=8,persist=true) tileX
+#@ Integer(label="number of tiles along Y",value=14,persist=true) tileY
+#@ Integer(label="max number of time points to analyse",value=999,persist=true) maxTp
 
 /*
  * Macro for correcting, stitching and aligning time lapse mosaic images acquired with a custom 
@@ -12,7 +12,7 @@
  * DO NOT FORGET TO SWITCH ON PROCESS/BINARY/OPTIONS/ BLACK BACKGROUND
  */
 
- setBatchMode(true);
+setBatchMode(true);
 
 // PARAMS //
 hyperFoldName = "hyperFolderSingleTiff"; // name of the folder to dump the hypoerstack image sequence
@@ -26,10 +26,15 @@ mosaicFoldName = "stitchedTimePoints"; // Name of the stitcher output folder
 mosaicRegFoldName = "regMosaic"; // Name of the output folder for registered mosaic
 movieOutputFoldName = "outputMovie"; // Name of the folder containing the movie
 movieOutputName = "regMovie"; // Name of the movie after alignment (registration)
+outParams = "analysisParams.txt"; // Name of the output file to remember the parameters used
 
-
+// stitch options
+stitchOpts = newArray(4);
+stitchOpts[0] = "Linear Blending"; // fusion_method
+stitchOpts[1] = 0.30; // regression_threshold
+stitchOpts[2] = 4; // max/avg_displacement_threshold
+stitchOpts[3] = 3; // absolute_displacement_threshold
 // *PARAMS* //
-
 
 run("Close All");
 
@@ -52,6 +57,7 @@ run("Stack to Hyperstack...", "order=xyczt(default) channels=1 slices="+tilesPer
 myRootDir = getDirectory("image");
 myRootDir = myRootDir+"/.."; // Yes, it's ugly and OS specific, but it's good enough for the moment...
 myHyperDir = myRootDir+"/"+hyperFoldName;
+
 File.makeDirectory(myHyperDir); 
 run("Image Sequence... ", "format=TIFF save="+myHyperDir+"/hyperbrutes_t001_z001.tif");
 
@@ -97,7 +103,7 @@ for (tp=1; tp<=totFrame; tp++){
 	// Correct light intensity => maybe later if needed.
 
 	// Run stiching
-	imSize = runStitching(timeStr, tempFFCOutFolder, tempFCCNameOut);
+	imSize = runStitching(timeStr, tempFFCOutFolder, tempFCCNameOut, stitchOpts);
 	mosaicWidth[tp-1] = imSize[0];
 	mosaicHeight[tp-1] = imSize[1];	
 	
@@ -109,17 +115,32 @@ for (tp=1; tp<=totFrame; tp++){
 File.makeDirectory(myRootDir+"/"+movieOutputFoldName);
 alignMosaics()
 
+// Save parameters into a txt file
+PathParamsFile = myRootDir+"/"+movieOutputFoldName+"/"+outParams;
+File.open(PathParamsFile);
+File.append("Image analysis parameters", PathParamsFile);
+getDateAndTime(year, month, dayOfWeek, dayOfMonth, hour, minute, second, msec);
+File.append("Analysis performed the: "+year+"/"+month+1+"/"+dayOfMonth, PathParamsFile);
+File.append("Input directory: "+myRootDir, PathParamsFile);
+File.append("number of tiles along X: "+tileX, PathParamsFile);
+File.append("number of tiles along Y: "+tileY, PathParamsFile);
+File.append("max number of time points to analyse: "+maxTp, PathParamsFile);
+File.append("TileOverlap="+tileOverlap, PathParamsFile);
+File.append("", PathParamsFile); // skip line
+File.append("Stitching options", PathParamsFile);
+File.append("fusion_method: "+stitchOpts[0], PathParamsFile);
+File.append("regression_threshold: "+stitchOpts[0], PathParamsFile);
+File.append("max/avg_displacement_threshold: "+stitchOpts[0], PathParamsFile);
+File.append("absolute_displacement_threshold: "+stitchOpts[0], PathParamsFile);
 
-
+IJ.log("Done stitching");
 
 function alignMosaics(){
 	/*
 	 * Because slight modifications of the position or rotation of the sample have appeared, we realign the 
 	 * individual mosaics based on their content
-	 * 
- 	 */
+	 */
  	 
-	tempOutput = "/media/sherbert/Data/Projects/OG_smallq/1803_N16_EH_Stitching/180704_virtualRegister";
 	virtualRegDescriptor = "source="+myRootDir+"/"+mosaicFoldName+" ";
 	virtualRegDescriptor = virtualRegDescriptor+"output="+myRootDir+"/"+mosaicRegFoldName+" ";
 	virtualRegDescriptor = virtualRegDescriptor+"feature=Rigid registration=[Rigid                -- translate + rotate                  ] shrinkage";
@@ -130,44 +151,6 @@ function alignMosaics(){
 	// resave as a single multitiff file
 	run("Image Sequence...", "open="+myRootDir+"/"+mosaicRegFoldName+"/MosaicTest_t001.tif sort");
 	saveAs("Tiff", myRootDir+"/"+movieOutputFoldName+"/"+movieOutputName);
-	
-	
-	
-
- 	 /* OLD VERSION USING DESCRIPTOR BASED REGISTRATION
-	 * Load all frames together
-	 * Apply registration
-	 * Save single movie
-	 * 
-	 * Could use a crop of the image to go faster !
-	 * run("Descriptor-based series registration (2d/3d + t)", "series_of_images=[[XYCTZ] stitchedTimePoints] reapply image=[Fuse and display]");
-	 * 
-	
-	run("Image Sequence...", "open="+myRootDir+"/"+mosaicFoldName+"/MosaicTest_t001.tif sort");
-	titleTempMovie=getTitle();
-	
-	descriptorOptions = "series_of_images="+titleTempMovie+" ";
-	descriptorOptions = descriptorOptions + "brightness_of=Strong ";
-	descriptorOptions = descriptorOptions + "approximate_size=[10 px] ";
-	descriptorOptions = descriptorOptions + "type_of_detections=[Maxima only] ";
-	descriptorOptions = descriptorOptions + "subpixel_localization=[3-dimensional quadratic fit] ";
-	descriptorOptions = descriptorOptions + "transformation_model=[Rigid (2d)] ";
-	descriptorOptions = descriptorOptions + "images_are_roughly_aligned ";
-	descriptorOptions = descriptorOptions + "number_of_neighbors=3 ";
-	descriptorOptions = descriptorOptions + "redundancy=1 ";
-	descriptorOptions = descriptorOptions + "significance=3 ";
-	descriptorOptions = descriptorOptions + "allowed_error_for_ransac=5 ";
-	descriptorOptions = descriptorOptions + "global_optimization=[All against first image (no global optimization)] ";
-	descriptorOptions = descriptorOptions + "range=5 ";
-	descriptorOptions = descriptorOptions + "choose_registration_channel=1 ";
-	descriptorOptions = descriptorOptions + "image=[Fuse and display]";
-
-	run("Descriptor-based series registration (2d/3d + t)", descriptorOptions);
-
-	rename(movieOutputName);
-
-	saveAs("Tiff", myRootDir+"/"+movieOutputFoldName+"/"+movieOutputName);
-	*/
 	
 }
  
@@ -238,14 +221,14 @@ function elongateNum2Str(nDigits, number){
 		outNumber = "00"+number;
 	} else if (number<100){
 		outNumber = "0"+number;
-	} else if (number<100){
+	} else if (number<1000){
 		outNumber = ""+number;
 	}
 	return outNumber; 
 }
 
 
-function runStitching(timeStr, tempFFCOutFolder, tempFCCNameOut){
+function runStitching(timeStr, tempFFCOutFolder, tempFCCNameOut, stitchOpts){
 	/*
 	 * Deals with the call to the stitcher
 	 */
@@ -257,10 +240,10 @@ function runStitching(timeStr, tempFFCOutFolder, tempFCCNameOut){
 	stitchOptions += " directory="+tempFFCOutFolder;
 	stitchOptions += " file_names="+tempFCCNameOut+"{iii}.tif";
 	stitchOptions += " output_textfile_name=TileConfiguration_script_"+timeStr+".txt";
-	stitchOptions += " fusion_method=[Linear Blending]";
-	stitchOptions += " regression_threshold=0.30";
-	stitchOptions += " max/avg_displacement_threshold=4";
-	stitchOptions += " absolute_displacement_threshold=3";
+	stitchOptions += " fusion_method=["+stitchOpts[0]+"]";
+	stitchOptions += " regression_threshold="+stitchOpts[1];
+	stitchOptions += " max/avg_displacement_threshold="+stitchOpts[2];
+	stitchOptions += " absolute_displacement_threshold="+stitchOpts[3];
 	stitchOptions += " compute_overlap";
 	stitchOptions += " ignore_z_stage";
 	stitchOptions += " computation_parameters=[Save computation time (but use more RAM)]";

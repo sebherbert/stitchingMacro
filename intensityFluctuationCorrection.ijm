@@ -15,25 +15,20 @@
  */
 
 // PARAMS //
-outImageName = "intStable_regMovie"
+prefIntStable = "intStable_";
+outParams = "analysisParams.txt"; // Name of the output file to remember the parameters used
+medRad = 5; // use a median filter (in pixels)
+corrMethod = "Divide"; // Use a division to correct the intensity shifts
 // *PARAMS* //
 
 // Load image
 run("Close All");
 open(myRegFile);
 myOutputDir = getDirectory("image");
+myCurrentImageName = getInfo("image.filename");
 
 // Extract  dimensions
 getDimensions(width, height, channels, slices, frames);
-
-/*/ Extract borders method
-ROIcoords = ROIborders(sizeTileX, sizeTileY, width, height);
-// Fill the inside rectangle with 0
-makeRectangle(ROIcoords[0], ROIcoords[1], ROIcoords[2], ROIcoords[3]);
-setForegroundColor(0, 0, 0);
-run("Fill", "stack");
-// Use border for ratio based intensity correction
-*/
 
 // Modal intensity method
 if ( roiManager("count")!= 0) { // make sure there is no previous ROI
@@ -44,7 +39,7 @@ run("Select All");
 roiManager("Add");
 
 // Prepare image
-//run("Median...", "radius=5 stack"); // To smoothen out small differences and improve mode eval
+run("Median...", "radius="+medRad+" stack"); // To smoothen out small differences and improve mode eval
 if (bitDepth()==8 || bitDepth()==16){
 	setMinAndMax(0, 2^bitDepth()-1 );
 	run("32-bit"); // to allow for intensity division
@@ -58,7 +53,7 @@ roiManager("multi measure");
 for (i=1; i<=nSlices; i++) {
   	setSlice(i);
 	modeInt = getResult("Mode1", i-1);
-	run("Divide...", "value="+modeInt+" slice");
+	run(corrMethod+"...", "value="+modeInt+" slice");
 }
 
 // Set image back to 8 bits to save memory
@@ -66,8 +61,29 @@ setAutoContrasts();
 run("8-bit");
 
 // Resave image
-saveAs("Tiff", "/media/sherbert/Data/Projects/Own_Project/macro_for_stitch/outputMovie/intStable_regMovie.tif");
+outImageName = prefIntStable+myCurrentImageName;
+saveAs("Tiff", myOutputDir+"/"+outImageName);
 
+// Save parameters 
+PathParamsFile = myOutputDir+"/"+outParams;
+if (!File.exists(PathParamsFile)) {
+	File.open(PathParamsFile);	
+}
+File.append("\nImage intensity stabilisation parameters", PathParamsFile);
+getDateAndTime(year, month, dayOfWeek, dayOfMonth, hour, minute, second, msec);
+File.append("Analysis performed the: "+year+"/"+month+1+"/"+dayOfMonth, PathParamsFile);
+File.append("Input file: "+myOutputDir+myCurrentImageName, PathParamsFile);
+File.append("Radius of the median filter: "+medRad, PathParamsFile);
+File.append("Correction method: "+corrMethod, PathParamsFile);
+
+// Clean up the Desktop
+if (isOpen("Results")) {
+   selectWindow("Results");
+   run("Close");
+} 
+
+// exit macro
+IJ.log("Done stabilizing the intensities");
 
 
 function ROIborders(sizeTileX, sizeTileY, width, height) {
