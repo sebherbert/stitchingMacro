@@ -4,7 +4,7 @@
 #@ Integer(label="Smallest structure size (pixel)",value=3,persist=true) lowPass
 #@ String(label="Suppress bands in image",choices={"None","Vertical","Horizontal"}) suppressBands
 #@ Integer(label="Tolerance angle",value=45,persist=true) angleTol
-
+#@ Boolean(label="Calculate a threshold for each timepoint",value=true,persist=true) doCalculate
 /*
  * Macro for thresholding time lapse mosaic images acquired with a custom microscope 
  * 
@@ -21,7 +21,6 @@ prefFFTMovieName = "FFT_"; // Name of the movie after FFT
 outParams = "analysisParams.txt"; // Name of the output file to remember the parameters used
 // Thresholding step
 binMethod = "MaxEntropy"; // binarization threshold method
-doCalculate = 1;
 // Analyze particle step
 binMinSize = 2000; // smallest object acceptable in binarization
 binCirc = "0.00-0.40"; // circularity of the detected object
