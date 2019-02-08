@@ -22,7 +22,7 @@ outParams = "analysisParams.txt"; // Name of the output file to remember the par
 // Thresholding step
 binMethod = "MaxEntropy"; // binarization threshold method
 // Analyze particle step
-binMinSize = 2000; // smallest object acceptable in binarization
+binMinSize = 2500; // smallest object acceptable in binarization
 binCirc = "0.00-0.40"; // circularity of the detected object
 // *PARAMS* //
 
@@ -54,13 +54,13 @@ binParams = "method="+binMethod+" background=Default";
 if (doCalculate) {
 	binParams = binParams+" calculate";
 }
-binParams =  binParams+" black";
-run("Make Binary", binParams);
+//binParams =  binParams+" black";
+run("Convert to Mask", binParams);
 
 // clean image based on particle caracteristics
 run("Erode", "stack");run("Erode", "stack"); // Should look for a nicer way of morphological opening but same result in the end
 run("Dilate", "stack");run("Dilate", "stack"); // Also if changed here, should also change the output params text file
-run("Analyze Particles...", "size="+binMinSize+"-Infinity circularity="+binCirc+" show=Masks exclude clear stack");
+run("Analyze Particles...", "size="+binMinSize+"-Infinity circularity="+binCirc+" show=Masks clear stack");
 rename(myCurrentImageName);
 // invert images
 run("Invert", "stack");
