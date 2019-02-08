@@ -41,10 +41,11 @@ if (doFFTbandpass) {
 	fftParams = fftParams+" suppress="+suppressBands;
 	fftParams = fftParams+" tolerance="+angleTol;
 	run("Bandpass Filter...", fftParams+" autoscale saturate process");
+	// Save temp file
+	myCurrentImageName = prefFFTMovieName+myCurrentImageName;
+	saveAs("Tiff", myOutputDir+"/"+myCurrentImageName);
 }
-// Save temp file
-myCurrentImageName = prefFFTMovieName+myCurrentImageName;
-saveAs("Tiff", myOutputDir+"/"+myCurrentImageName);
+
 
 // make binary
 // new image name
