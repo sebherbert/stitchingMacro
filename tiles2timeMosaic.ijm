@@ -209,7 +209,7 @@ function flatFieldCorrect(timeStr, tempHyperTpName, tempFFCOutFolder, tempFCCNam
 	imageCalculator("Subtract create 32-bit stack", tempHyperTpName,titleMedImage);
 	rename(fFCorrTp+"_"+timeStr);
 	run("8-bit");
-	run("Image Sequence... ", "format=TIFF name="+tempFCCNameOut+" start=1 digits=3 save="+tempFFCOutFolder+tempFCCNameOut+"001.tif");
+	run("Image Sequence... ", "format=TIFF name="+tempFCCNameOut+" start=1 digits=4 save="+tempFFCOutFolder+tempFCCNameOut+"0001.tif");
 }	
 
 
@@ -218,11 +218,15 @@ function elongateNum2Str(nDigits, number){
 	 * to fit a number into a number of nDigits digits 
 	 */
 	if (number<10) {
-		outNumber = "00"+number;
+		outNumber = "000"+number;
 	} else if (number<100){
-		outNumber = "0"+number;
+		outNumber = "00"+number;
 	} else if (number<1000){
+		outNumber = "0"+number;
+	} else if (number<10000){
 		outNumber = ""+number;
+	}else{
+		print("Warning: too many digits")
 	}
 	return outNumber; 
 }
