@@ -2,6 +2,8 @@
 #@ Integer(label="number of tiles along X",value=9,persist=true) tileX
 #@ Integer(label="number of tiles along Y",value=14,persist=true) tileY
 #@ Integer(label="max number of time points to analyse",value=999,persist=true) maxTp
+#@ String (label="tiles layout type", value="snake by columns", choices={"column-by-column", "snake by columns"}, persist=true) layoutType
+#@ String (label="tiles layout order", value="Down & Left", choices={"Down & Left", "Up & Left"}, persist=true) layoutOrder
 
 /*
  * Macro for correcting, stitching and aligning time lapse mosaic images acquired with a custom 
@@ -232,8 +234,8 @@ function runStitching(timeStr, tempFFCOutFolder, tempFCCNameOut, stitchOpts){
 	/*
 	 * Deals with the call to the stitcher
 	 */
-	stitchOptions  = " type=[Grid: snake by columns]";
-	stitchOptions += " order=[Down & Left]";
+	stitchOptions  = " type=[Grid: "+layoutType+"]";
+	stitchOptions += " order=["+layoutOrder+"]";
 	stitchOptions += " grid_size_x="+tileX+" grid_size_y="+tileY;
 	stitchOptions += " tile_overlap="+tileOverlap;
 	stitchOptions += " first_file_index_i=1";
