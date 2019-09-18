@@ -1,5 +1,5 @@
 #@ File(label="Select the first tile", style="file") myFileOri
-#@ Integer(label="number of tiles along X",value=8,persist=true) tileX
+#@ Integer(label="number of tiles along X",value=9,persist=true) tileX
 #@ Integer(label="number of tiles along Y",value=14,persist=true) tileY
 #@ Integer(label="max number of time points to analyse",value=999,persist=true) maxTp
 
