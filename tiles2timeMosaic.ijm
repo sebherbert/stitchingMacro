@@ -1,7 +1,10 @@
 #@ File(label="Select the first tile", style="file") myFileOri
-#@ Integer(label="number of tiles along X",value=8,persist=true) tileX
+#@ Integer(label="number of tiles along X",value=9,persist=true) tileX
 #@ Integer(label="number of tiles along Y",value=14,persist=true) tileY
-#@ Integer(label="max number of time points to analyse",value=999,persist=true) maxTp
+#@ Integer(label="first time point to analyse",value=0,persist=true) minTp
+#@ Integer(label="last time point to analyse",value=999,persist=true) maxTp
+#@ String (label="tiles layout type", value="snake by columns", choices={"column-by-column", "snake by columns"}, persist=true) layoutType
+#@ String (label="tiles layout order", value="Down & Left", choices={"Down & Left", "Up & Left"}, persist=true) layoutOrder
 
 /*
  * Macro for correcting, stitching and aligning time lapse mosaic images acquired with a custom 
@@ -37,6 +40,11 @@ stitchOpts[3] = 3; // absolute_displacement_threshold
 // *PARAMS* //
 
 run("Close All");
+
+// Check parameters compatibility
+if (maxTp <= minTp){
+	exit("Incompatible values: first time point to analyse must be smaller than last point.") 
+}
 
 // Load images in virtual stack
 // run("Image Sequence...", "open="+myFileOri+" sort use"); => For virtual stack; better but requires virtual stack investigation...
@@ -88,7 +96,7 @@ totFrame =  minOf(totFrame, maxTp); // limit the number of timepoints to use
 mosaicHeight = newArray(totFrame);
 mosaicWidth = newArray(totFrame);
 
-for (tp=1; tp<=totFrame; tp++){
+for (tp=minTp; tp<=totFrame; tp++){
 	// Open the whole tp
 	timeStr = "t"+elongateNum2Str(nDigits, tp);
 	run("Image Sequence...", "open="+myHyperDir+" file="+timeStr+" sort");
@@ -113,7 +121,7 @@ for (tp=1; tp<=totFrame; tp++){
 // align all mosaics
 // checkMosaicsSize() => not needed anymore v2.3
 File.makeDirectory(myRootDir+"/"+movieOutputFoldName);
-alignMosaics()
+alignMosaics();
 
 // Save parameters into a txt file
 PathParamsFile = myRootDir+"/"+movieOutputFoldName+"/"+outParams;
@@ -124,8 +132,11 @@ File.append("Analysis performed the: "+year+"/"+month+1+"/"+dayOfMonth, PathPara
 File.append("Input directory: "+myRootDir, PathParamsFile);
 File.append("number of tiles along X: "+tileX, PathParamsFile);
 File.append("number of tiles along Y: "+tileY, PathParamsFile);
-File.append("max number of time points to analyse: "+maxTp, PathParamsFile);
+File.append("first time point to analyse: "+minTp, PathParamsFile);
+File.append("last time point to analyse: "+maxTp, PathParamsFile);
 File.append("TileOverlap="+tileOverlap, PathParamsFile);
+File.append("tiles layout type: "+layoutType, PathParamsFile);
+File.append("tiles layout order: "+layoutOrder, PathParamsFile);
 File.append("", PathParamsFile); // skip line
 File.append("Stitching options", PathParamsFile);
 File.append("fusion_method: "+stitchOpts[0], PathParamsFile);
@@ -232,8 +243,8 @@ function runStitching(timeStr, tempFFCOutFolder, tempFCCNameOut, stitchOpts){
 	/*
 	 * Deals with the call to the stitcher
 	 */
-	stitchOptions  = " type=[Grid: snake by columns]";
-	stitchOptions += " order=[Down & Left]";
+	stitchOptions  = " type=[Grid: "+layoutType+"]";
+	stitchOptions += " order=["+layoutOrder+"]";
 	stitchOptions += " grid_size_x="+tileX+" grid_size_y="+tileY;
 	stitchOptions += " tile_overlap="+tileOverlap;
 	stitchOptions += " first_file_index_i=1";
